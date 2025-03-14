@@ -2,19 +2,20 @@ import { zValidator } from "@hono/zod-validator";
 import { DocumentStatus, DocumentType } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
+import { paginationObject } from "../utils/prisma-pagination";
 import { getPrisma } from "../utils/prismaFunction";
+import { queryPaginationSchema } from "../utils/query-validator";
 
 const documents = new Hono();
 
-documents.get("/", async (c) => {
+documents.get("/", zValidator("query", queryPaginationSchema), async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);
-  const pageNumber = Number(c.req.query("page")) || 1;
-  const pageSize = Number(c.req.query("limit")) || 50;
+  const { page, limit, q } = c.req.valid("query");
 
   const [documents, count] = await prisma.$transaction([
     prisma.document.findMany({
-      skip: (pageNumber - 1) * pageSize,
-      take: pageSize,
+            ...paginationObject({ limit, page }),
+      
       orderBy: { createdAt: "desc" },
     }),
     prisma.document.count(),
@@ -22,8 +23,8 @@ documents.get("/", async (c) => {
 
   return c.json({
     meta: {
-      page: pageNumber,
-      limit: pageSize,
+      page,
+      limit,
       total: count,
     },
     data: documents,

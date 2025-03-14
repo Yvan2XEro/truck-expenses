@@ -7,7 +7,18 @@ import { getPrisma } from "../utils/prismaFunction";
 import { queryPaginationSchema } from "../utils/query-validator";
 
 const trips = new Hono();
-const tripsQuerySchema = queryPaginationSchema.extend({
+const tripsQuerySchema = queryPaginationSchema.extend({});
+
+const tripSchema = z.object({
+  vehicleId: z.string(),
+  driverId: z.string(),
+  clientId: z.string().optional(),
+  departure: z.string(),
+  arrival: z.string(),
+  startTime: z.coerce.date(),
+  endTime: z.coerce.date().optional(),
+  tripType: z.nativeEnum(TripType),
+  cubicMeters: z.number().optional(),
 });
 trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);
@@ -33,8 +44,12 @@ trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
         createdAt: true,
         updatedAt: true,
         vehicle: true,
+        vehicleId: true,
         driver: true,
         client: true,
+        clientId: true,
+        driverId: true,
+        cubicMeters: true
       },
     }),
     prisma.trip.count({ where }),
@@ -64,84 +79,33 @@ trips.get("/:id", async (c) => {
   return c.json(trip);
 });
 
-trips.post(
-  "/",
-  zValidator(
-    "json",
-    z.object({
-      vehicleId: z.string(),
-      driverId: z.string(),
-      clientId: z.string().optional(),
-      departure: z.string(),
-      arrival: z.string(),
-      startTime: z.coerce.date(),
-      endTime: z.coerce.date().optional(),
-      tripType: z.nativeEnum(TripType),
-    })
-  ),
-  async (c) => {
-    const prisma = getPrisma(Bun.env.DATABASE_URL!);
-    const {
-      vehicleId,
-      driverId,
-      clientId,
-      departure,
-      arrival,
-      startTime,
-      endTime,
-      tripType,
-    } = c.req.valid("json");
+trips.post("/", zValidator("json", tripSchema), async (c) => {
+  const prisma = getPrisma(Bun.env.DATABASE_URL!);
 
-    const newTrip = await prisma.trip.create({
-      data: {
-        vehicleId,
-        driverId,
-        clientId,
-        departure,
-        arrival,
-        startTime,
-        endTime,
-        tripType,
-      },
-    });
+  const newTrip = await prisma.trip.create({
+    data: c.req.valid("json"),
+  });
 
-    return c.json(newTrip, 201);
+  return c.json(newTrip, 201);
+});
+
+trips.patch("/:id", zValidator("json", tripSchema.partial()), async (c) => {
+  const prisma = getPrisma(Bun.env.DATABASE_URL!);
+  const id = c.req.param("id");
+  const trip = await prisma.trip.findUnique({ where: { id } });
+
+  if (!trip) {
+    return c.json({ message: "Trip not found" }, 404);
   }
-);
 
-trips.patch(
-  "/:id",
-  zValidator(
-    "json",
-    z.object({
-      vehicleId: z.string().optional(),
-      driverId: z.string().optional(),
-      clientId: z.string().optional(),
-      departure: z.string().optional(),
-      arrival: z.string().optional(),
-      startTime: z.date().optional(),
-      endTime: z.date().optional(),
-      tripType: z.nativeEnum(TripType).optional(),
-    })
-  ),
-  async (c) => {
-    const prisma = getPrisma(Bun.env.DATABASE_URL!);
-    const id = c.req.param("id");
-    const trip = await prisma.trip.findUnique({ where: { id } });
+  const updatedData = c.req.valid("json");
+  const updatedTrip = await prisma.trip.update({
+    where: { id },
+    data: updatedData,
+  });
 
-    if (!trip) {
-      return c.json({ message: "Trip not found" }, 404);
-    }
-
-    const updatedData = c.req.valid("json");
-    const updatedTrip = await prisma.trip.update({
-      where: { id },
-      data: updatedData,
-    });
-
-    return c.json(updatedTrip);
-  }
-);
+  return c.json(updatedTrip);
+});
 
 trips.delete("/:id", async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);

@@ -13,16 +13,33 @@ const expensesQuerySchema = queryPaginationSchema.extend({
   category: z.nativeEnum(ExpenseCategory).optional(),
   trip: z.string().optional(),
 });
+
+const expensesSchema = z.object({
+  tripId: z.string(),
+  category: z
+    .enum([
+      ExpenseCategory.FUEL,
+      ExpenseCategory.TOLL,
+      ExpenseCategory.MAINTENANCE,
+      ExpenseCategory.MISC,
+      ExpenseCategory.WEIGHBRIDGE,
+    ])
+    .nullable(),
+  weighbridgeId: z.string().optional().nullable(),
+  amount: z.number(),
+  description: z.string().optional(),
+});
+
 expenses.get("/", zValidator("query", expensesQuerySchema), async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);
   const { category, trip, q, ...pagination } = c.req.valid("query");
-  const where: Prisma.ExpenseWhereInput = {}
+  const where: Prisma.ExpenseWhereInput = {};
 
-  if(trip) {
-    where.tripId = trip
+  if (trip) {
+    where.tripId = trip;
   }
-  if(category) {
-    where.category = category
+  if (category) {
+    where.category = category;
   }
 
   const [data, count] = await prisma.$transaction([
@@ -30,6 +47,17 @@ expenses.get("/", zValidator("query", expensesQuerySchema), async (c) => {
       where,
       ...paginationObject(pagination),
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        category: true,
+        amount: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+        trip: true,
+        weighbridge: true,
+        weighbridgeId: true,
+      },
     }),
     prisma.expense.count({ where }),
   ]);
@@ -51,53 +79,21 @@ expenses.get("/:id", async (c) => {
 });
 
 // Create expense
-expenses.post(
-  "/",
-  zValidator(
-    "json",
-    z.object({
-      tripId: z.string(),
-      category: z.enum([
-        ExpenseCategory.FUEL,
-        ExpenseCategory.TOLL,
-        ExpenseCategory.MAINTENANCE,
-        ExpenseCategory.MISC,
-      ]),
-      amount: z.number(),
-      description: z.string().optional(),
-    })
-  ),
-  async (c) => {
-    const prisma = getPrisma(Bun.env.DATABASE_URL!);
-    const { tripId, category, amount, description } = c.req.valid("json");
+expenses.post("/", zValidator("json", expensesSchema), async (c) => {
+  const prisma = getPrisma(Bun.env.DATABASE_URL!);
+  const data = c.req.valid("json");
 
-    const expense = await prisma.expense.create({
-      data: { tripId, category, amount, description },
-    });
+  const expense = await prisma.expense.create({
+    data,
+  });
 
-    return c.json(expense);
-  }
-);
+  return c.json(expense);
+});
 
 // Update expense by ID
 expenses.patch(
   "/:id",
-  zValidator(
-    "json",
-    z.object({
-      tripId: z.string().optional(),
-      category: z
-        .enum([
-          ExpenseCategory.FUEL,
-          ExpenseCategory.TOLL,
-          ExpenseCategory.MAINTENANCE,
-          ExpenseCategory.MISC,
-        ])
-        .optional(),
-      amount: z.number().optional(),
-      description: z.string().optional(),
-    })
-  ),
+  zValidator("json", expensesSchema.partial()),
   async (c) => {
     const prisma = getPrisma(Bun.env.DATABASE_URL!);
     const id = c.req.param("id");

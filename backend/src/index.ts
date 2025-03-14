@@ -10,6 +10,7 @@ import invoices from './routes/invoices';
 import trips from './routes/trips';
 import users from './routes/users';
 import vehicles from './routes/vehicles';
+import weighbridges from './routes/weighbridges';
 
 const app = new Hono();
 
@@ -23,7 +24,7 @@ app.route("/expenses", expenses)
 app.route("/invoices", invoices)
 app.route("/trips", trips)
 app.route("/vehicles", vehicles)
-
+app.route("/weighbridges", weighbridges)
 
 
 app.get(
