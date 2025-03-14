@@ -19,6 +19,8 @@ const tripSchema = z.object({
   endTime: z.coerce.date().optional(),
   tripType: z.nativeEnum(TripType),
   cubicMeters: z.number().optional(),
+  totalAmount: z.number().optional(),
+  lvNumber: z.string().optional(),
 });
 trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);
@@ -49,7 +51,8 @@ trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
         client: true,
         clientId: true,
         driverId: true,
-        cubicMeters: true
+        cubicMeters: true,
+        totalAmount: true,
       },
     }),
     prisma.trip.count({ where }),

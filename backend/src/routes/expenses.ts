@@ -12,6 +12,8 @@ const expenses = new Hono();
 const expensesQuerySchema = queryPaginationSchema.extend({
   category: z.nativeEnum(ExpenseCategory).optional(),
   trip: z.string().optional(),
+  startingDate: z.coerce.date().optional(),
+  endingDate: z.coerce.date().optional(),
 });
 
 const expensesSchema = z.object({
@@ -32,7 +34,8 @@ const expensesSchema = z.object({
 
 expenses.get("/", zValidator("query", expensesQuerySchema), async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);
-  const { category, trip, q, ...pagination } = c.req.valid("query");
+  const { category, trip, q, startingDate, endingDate, ...pagination } =
+    c.req.valid("query");
   const where: Prisma.ExpenseWhereInput = {};
 
   if (trip) {
@@ -40,6 +43,13 @@ expenses.get("/", zValidator("query", expensesQuerySchema), async (c) => {
   }
   if (category) {
     where.category = category;
+  }
+
+  if (startingDate && endingDate) {
+    where.createdAt = {
+      gte: new Date(startingDate),
+      lte: new Date(endingDate),
+    };
   }
 
   const [data, count] = await prisma.$transaction([
