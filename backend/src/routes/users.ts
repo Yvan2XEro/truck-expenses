@@ -55,6 +55,45 @@ users.get("/", zValidator("query", userQuerySchema), async (c) => {
   });
 });
 
+const driversTripsFilterSchema = z.object({
+  endingDate: z.coerce.date(),
+  startingDate: z.coerce.date(),
+});
+// GET /drivers-trips (List drivers with trips sinca at a specific date)
+users.get(
+  "/drivers-trips",
+  zValidator("query", driversTripsFilterSchema),
+  async (c) => {
+    const { startingDate, endingDate } = c.req.valid("query");
+    const drivers = await prisma.user.findMany({
+      where: { role: UserRole.DRIVER },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        matricule: true,
+        trips: {
+          where: {
+            startTime: {
+              gte: startingDate,
+            },
+            endTime: {
+              lte: endingDate,
+            },
+          },
+          // orderBy: { startTime: "desc" },
+        },
+      },
+      orderBy: {
+        trips: {
+          _count: "desc",
+        },
+      },
+    });
+    return c.json(drivers);
+  }
+);
+
 // GET /users/:id (Get a user)
 users.get("/:id", async (c) => {
   const id = c.req.param("id");

@@ -7,6 +7,7 @@ import clients from './routes/clients';
 import documents from './routes/documents';
 import expenses from './routes/expenses';
 import invoices from './routes/invoices';
+import logs from './routes/logs';
 import trips from './routes/trips';
 import users from './routes/users';
 import vehicles from './routes/vehicles';
@@ -23,6 +24,7 @@ app.route("/documents", documents)
 app.route("/expenses", expenses)
 app.route("/invoices", invoices)
 app.route("/trips", trips)
+app.route("/logs", logs)
 app.route("/vehicles", vehicles)
 app.route("/weighbridges", weighbridges)
 

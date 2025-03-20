@@ -31,6 +31,7 @@ model Vehicle {
   documents          Document[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+  deletedAt         DateTime?
 }
 
 enum VehicleType {
@@ -49,10 +50,12 @@ model User {
   salaries  Salary[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt         DateTime?
 }
 
 enum UserRole {
   ADMIN
+  USER
   DRIVER
 }
 
@@ -65,6 +68,7 @@ model Client {
   invoices  Invoice[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  deletedAt         DateTime?
 }
 
 model Trip {
@@ -74,7 +78,7 @@ model Trip {
   clientId    String?
   departure   String
   arrival     String
-  lvNumber   String?
+  lvNumber    String?   @unique
   startTime   DateTime
   endTime     DateTime?
   cubicMeters Float?
@@ -84,6 +88,7 @@ model Trip {
   totalAmount Decimal?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt         DateTime?
 
   vehicle Vehicle  @relation(fields: [vehicleId], references: [id])
   driver  User     @relation(fields: [driverId], references: [id])
@@ -103,6 +108,7 @@ model Weighbridge {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt         DateTime?
 }
 
 model Expense {
@@ -114,9 +120,10 @@ model Expense {
   weighbridgeId String?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
+  deletedAt         DateTime?
 
   weighbridge Weighbridge? @relation(fields: [weighbridgeId], references: [id])
-  trip        Trip         @relation(fields: [tripId], references: [id])
+  trip        Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
 }
 
 enum ExpenseCategory {
@@ -135,6 +142,7 @@ model Document {
   status       DocumentStatus?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+  deletedAt         DateTime?
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 }

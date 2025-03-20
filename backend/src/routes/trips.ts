@@ -42,7 +42,20 @@ trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
         startTime: true,
         endTime: true,
         tripType: true,
-        expenses: true,
+        expenses: {
+          select: {
+            id: true,
+            category: true,
+            amount: true,
+            description: true,
+            weighbridge: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
         createdAt: true,
         updatedAt: true,
         vehicle: true,
@@ -70,10 +83,17 @@ trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
 trips.get("/:id", async (c) => {
   const prisma = getPrisma(Bun.env.DATABASE_URL!);
   const id = c.req.param("id");
-  const trip = await prisma.trip.findUnique({
+  let trip = await prisma.trip.findUnique({
     where: { id },
     include: { vehicle: true, driver: true, client: true },
   });
+
+  if (!trip) {
+    trip = await prisma.trip.findUnique({
+      where: { lvNumber: id },
+      include: { vehicle: true, driver: true, client: true },
+    });
+  }
 
   if (!trip) {
     return c.json({ message: "Trip not found" }, 404);
