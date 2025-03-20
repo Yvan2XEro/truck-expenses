@@ -12,19 +12,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum VehicleStatus {
-  AVAILABLE
-  ON_TRIP
-  MAINTENANCE
-  OUT_OF_SERVICE
-}
 
 model Vehicle {
   id                 String        @id @default(uuid())
   brand              String?
   type               VehicleType   @default(LOG_TRUCK)
   model              String?
-  status             VehicleStatus @default(AVAILABLE)
   tractorPlateNumber String?       @unique
   trailerPlateNumber String?       @unique
   trips              Trip[]
