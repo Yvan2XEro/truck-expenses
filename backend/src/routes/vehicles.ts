@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { Prisma, VehicleStatus, VehicleType } from "@prisma/client";
+import { Prisma, VehicleType } from "@prisma/client";
 import { Hono } from "hono";
 import * as z from "zod";
 import { paginationObject } from "../utils/prisma-pagination";
@@ -31,7 +31,6 @@ vehicles.get("/", zValidator("query", querySchema), async (c) => {
         createdAt: true,
         updatedAt: true,
         documents: true,
-        status: true,
       },
     }),
     prisma.vehicle.count({ where }),
@@ -69,7 +68,6 @@ vehicles.post(
       model: z.string(),
       tractorPlateNumber: z.string(),
       trailerPlateNumber: z.string().optional(),
-      status: z.nativeEnum(VehicleStatus).optional(),
     })
   ),
   async (c) => {
