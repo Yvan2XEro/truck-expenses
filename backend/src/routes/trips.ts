@@ -67,7 +67,7 @@ trips.get("/", zValidator("query", tripsQuerySchema), async (c) => {
         cubicMeters: true,
         totalAmount: true,
         lvNumber: true,
-        Invoice: true,
+        invoice: true,
       },
     }),
     prisma.trip.count({ where }),

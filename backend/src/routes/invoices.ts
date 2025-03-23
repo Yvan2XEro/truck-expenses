@@ -38,47 +38,28 @@ invoices.get("/:id", async (c) => {
   return c.json(invoice);
 });
 
+const invoiceSchema = z.object({
+  clientId: z.string(),
+  totalAmount: z.number(),
+  invoiceDate: z.coerce.date(),
+  tva: z.number().optional(),
+  tripId: z.string(),
+});
 // Create invoice
-invoices.post(
-  "/",
-  zValidator(
-    "json",
-    z.object({
-      clientId: z.string(),
-      totalAmount: z.number(),
-      invoiceDate: z.coerce.date(),
-      //   status: z.enum(["PAID", "PENDING"]),
-      volumeM3: z.number(),
-      tripId: z.string(),
-    })
-  ),
-  async (c) => {
-    const prisma = getPrisma(Bun.env.DATABASE_URL!);
-    const { clientId, totalAmount, invoiceDate, volumeM3, tripId } =
-      c.req.valid("json");
+invoices.post("/", zValidator("json", invoiceSchema), async (c) => {
+  const prisma = getPrisma(Bun.env.DATABASE_URL!);
 
-    const invoice = await prisma.invoice.create({
-      data: { clientId, totalAmount, invoiceDate, volumeM3, tripId },
-    });
+  const invoice = await prisma.invoice.create({
+    data: c.req.valid("json"),
+  });
 
-    return c.json(invoice);
-  }
-);
+  return c.json(invoice);
+});
 
 // Update invoice by ID
 invoices.patch(
   "/:id",
-  zValidator(
-    "json",
-    z.object({
-      clientId: z.string().optional(),
-      totalAmount: z.number().optional(),
-      invoiceDate: z.coerce.date().optional(),
-      //   status: z.enum(["PAID", "PENDING"]),
-      volumeM3: z.number().optional(),
-      tripId: z.string().optional(),
-    })
-  ),
+  zValidator("json", invoiceSchema.partial()),
   async (c) => {
     const prisma = getPrisma(Bun.env.DATABASE_URL!);
     const id = c.req.param("id");
