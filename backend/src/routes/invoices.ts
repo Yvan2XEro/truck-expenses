@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
-import { getPrisma } from "../utils/prismaFunction";
+import { getPrisma, getPrismaWithoutSoftDelete } from "../utils/prismaFunction";
 
 const invoices = new Hono();
 
@@ -47,13 +47,29 @@ const invoiceSchema = z.object({
 });
 // Create invoice
 invoices.post("/", zValidator("json", invoiceSchema), async (c) => {
-  const prisma = getPrisma(Bun.env.DATABASE_URL!);
+  const prisma = getPrismaWithoutSoftDelete(Bun.env.DATABASE_URL!);
 
-  const invoice = await prisma.invoice.create({
-    data: c.req.valid("json"),
+  const findDeletedInvoice = await prisma.invoice.findFirst({
+    where: {
+      tripId: c.req.valid("json").tripId,
+      deletedAt: { not: null },
+    },
   });
+  if (!findDeletedInvoice) {
+    return c.json(
+      await prisma.invoice.create({
+        data: c.req.valid("json"),
+      })
+    );
+  }
+  if (findDeletedInvoice) {
+    const invoice = await prisma.invoice.update({
+      where: { id: findDeletedInvoice.id },
+      data: { deletedAt: null, ...c.req.valid("json") },
+    });
+    return c.json(invoice);
+  }
 
-  return c.json(invoice);
 });
 
 // Update invoice by ID
