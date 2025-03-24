@@ -1,8 +1,6 @@
-// Common types
 export type ID = string;
 
-// User types
-export type UserRole = "ADMIN" | "DRIVER";
+export type UserRole = "ADMIN" | "USER" | "DRIVER";
 export type VehicleType = "FLATBED" | "LOG_TRUCK";
 export interface User {
   id: ID;
@@ -13,7 +11,6 @@ export interface User {
   updatedAt: string;
 }
 
-// Vehicle types
 export type VehicleStatus =
   | "AVAILABLE"
   | "ON_TRIP"
@@ -33,13 +30,13 @@ export interface Vehicle {
   documents: Document[];
 }
 
-// Document types
 export type DocumentType =
   | "INSURANCE"
   | "LICENSE"
   | "TECHNICAL_VISIT"
   | "ACF"
-  | "BLUE_CARD";
+  | "BLUE_CARD"
+  | "GRAY_CARD";
 
 export interface Document {
   id: ID;
@@ -49,12 +46,11 @@ export interface Document {
   issueDate: string;
   expiryDate: string;
   status: "VALID" | "INVALID";
-  file?: string; // URL to the document file
+  file?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Driver types
 export interface Driver {
   id: ID;
   userId: ID;
@@ -85,10 +81,8 @@ export interface Client {
   updatedAt: string;
 }
 
-// Trip types
 export type TripStatus = "planned" | "in_progress" | "completed" | "cancelled";
 export type TripType = "LONG_DISTANCE" | "SHUTTLE";
-
 
 export interface Trip {
   id: ID;
@@ -101,15 +95,30 @@ export interface Trip {
   endTime?: Date;
   tripType: TripType;
   vehicle?: Vehicle;
-  driver: User
+  driver: User;
   expenses: Expense[];
   client?: Client;
   createdAt: string;
   updatedAt: string;
+  cubicMeters?: number;
+  totalAmount?: number;
+  lvNumber?: string;
+  invoice?: Invoice;
 }
 
-// Expense types
-export type ExpenseCategory = "FUEL" | "TOLL" | "MAINTENANCE" | "MISC";
+export type ExpenseCategory =
+  | "FUEL"
+  | "TOLL"
+  | "MAINTENANCE"
+  | "MISC"
+  | "WEIGHBRIDGE";
+
+export type Weighbridge = {
+  id: ID;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export interface Expense {
   id: ID;
@@ -120,14 +129,16 @@ export interface Expense {
   date: string;
   createdAt: string;
   updatedAt: string;
+  weighbridgeId?: string;
+  weighbridge?: Weighbridge;
+  trip?: Trip;
 }
 
-// Transaction types
 export interface Transaction {
   id: ID;
   tripId: ID;
   driverId: ID;
-  type: TripType; // Same as trip type
+  type: TripType;
   amount: number;
   date: string;
   status: "pending" | "paid";
@@ -135,22 +146,17 @@ export interface Transaction {
   updatedAt: string;
 }
 
-// Invoice types
 export interface Invoice {
   id: ID;
   tripId: ID;
-  clientName: string;
-  providerName: string;
-  date: string;
-  vehicleLetterNumber: string; // Numéro de lettre voiture
-  volume: number; // m³
-  amount: number;
-  status: "draft" | "sent" | "paid";
+  clientId: ID;
+  invoiceDate: string;
+  tva: number;
+  totalAmount: number;
   createdAt: string;
   updatedAt: string;
 }
 
-// Report types
 export interface Report {
   id: ID;
   type: "expense" | "transaction" | "document";
@@ -158,5 +164,5 @@ export interface Report {
   endDate: string;
   generatedAt: string;
   format: "pdf" | "excel";
-  url: string; // URL to the report file
+  url: string;
 }

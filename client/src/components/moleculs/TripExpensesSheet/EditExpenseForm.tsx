@@ -16,25 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Weighbridge } from "@/types";
+import { PaginatedResponse } from "@/types/api";
+import { expenseCategories, expenseCategoriesFrText } from "@/utils/vehicles";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { EditWeighbridge } from "./EditWeighbridge";
 
 const expenseSchema = z.object({
   amount: z.coerce.number().min(1),
   description: z.string().optional(),
   tripId: z.string().uuid(),
-  category: z.enum(["FUEL", "TOLL", "MAINTENANCE", "MISC"]).default("FUEL"),
+  weighbridgeId: z.string().optional().nullable(),
+  category: z.enum(expenseCategories).default("FUEL"),
 });
-
-const expenseCategories = ["FUEL", "TOLL", "MAINTENANCE", "MISC"] as const;
-const expenseCategoriesFrText = {
-  FUEL: "Carburant",
-  TOLL: "Peages",
-  MAINTENANCE: "Entretien ou Reparation",
-  MISC: "Divers",
-};
 
 const updateExpenseSchema = expenseSchema.partial();
 export type ExpensePayload = z.infer<typeof updateExpenseSchema>;
@@ -48,25 +45,42 @@ export const EditExpenseForm = ({ payload }: IProps) => {
     resolver: zodResolver(!!id ? updateExpenseSchema : expenseSchema),
     defaultValues: {
       amount: payload?.amount,
-      description: payload?.description||undefined,
+      description: payload?.description || undefined,
       tripId: payload?.tripId,
       category: payload?.category,
+      weighbridgeId: payload?.weighbridgeId,
     },
     values: {
       amount: payload?.amount,
-      description: payload?.description||undefined,
+      description: payload?.description || undefined,
       tripId: payload?.tripId,
       category: payload?.category,
-    }
+      weighbridgeId: payload?.weighbridgeId,
+    },
+  });
+  const weighbridgesQuery = useQuery({
+    queryKey: ["weighbridges", "all"],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Weighbridge>>(`/weighbridges?limit=-1`)
+        .then((res) => res.data),
   });
   const client = useQueryClient();
+  const selectecCategory = form.watch("category");
   const mutation = useMutation({
     mutationFn: (data: ExpensePayload) => {
       if (!!id) return apiClient.patch(`/expenses/${id}`, data);
       return apiClient.post("/expenses", data);
     },
-    onSuccess: async() => {
+    onSuccess: async () => {
       form.reset();
+      await client.invalidateQueries({ queryKey: ["expenses"] });
+      await client.invalidateQueries({ queryKey: ["trips"] });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/expenses/${id}`),
+    onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ["expenses"] });
       await client.invalidateQueries({ queryKey: ["trips"] });
     },
@@ -105,6 +119,41 @@ export const EditExpenseForm = ({ payload }: IProps) => {
               </FormItem>
             )}
           />
+          {selectecCategory === "WEIGHBRIDGE" && (
+            <div className="flex items-center gap-3">
+              <FormField
+                control={form.control}
+                name="weighbridgeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pont bascule</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || undefined}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selectionner un type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {weighbridgesQuery.data?.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-col gap-5">
+                <FormLabel> </FormLabel>
+                <EditWeighbridge />
+              </div>
+            </div>
+          )}
           <FormField
             control={form.control}
             name="amount"
@@ -131,9 +180,21 @@ export const EditExpenseForm = ({ payload }: IProps) => {
               </FormItem>
             )}
           />
-           <Button type="submit" disabled={mutation.isPending}>
+          <div className="flex items-center gap-3">
+            {!!id && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => deleteMutation.mutate(id)}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "En cours..." : "Supprimer"}
+              </Button>
+            )}
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "En cours..." : "Enregistrer"}
             </Button>
+          </div>
         </form>
       </Form>
     </div>

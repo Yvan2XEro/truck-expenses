@@ -42,6 +42,9 @@ const createTripSchema = z.object({
   startTime: z.coerce.date().optional(),
   endTime: z.coerce.date().optional(),
   tripType: z.enum(["LONG_DISTANCE", "SHUTTLE"]).default("LONG_DISTANCE"),
+  cubicMeters: z.coerce.number().min(1).optional(),
+  totalAmount: z.coerce.number().min(1).optional(),
+  lvNumber: z.string().optional(),
 });
 
 export const tripTypeFrText = {
@@ -52,8 +55,9 @@ const updateTripSchema = createTripSchema.partial();
 
 interface EditTripProps {
   payload?: Partial<Trip>;
+  trigger?: React.ReactNode;
 }
-export const EditTrip = ({ payload }: EditTripProps) => {
+export const EditTrip = ({ payload, trigger }: EditTripProps) => {
   const id = payload?.id;
 
   const form = useForm<z.infer<typeof updateTripSchema>>({
@@ -67,6 +71,8 @@ export const EditTrip = ({ payload }: EditTripProps) => {
       startTime: payload?.startTime,
       endTime: payload?.endTime,
       tripType: payload?.tripType,
+      cubicMeters: payload?.cubicMeters,
+      totalAmount: payload?.totalAmount,
     },
   });
   console.log(form.formState.errors);
@@ -126,11 +132,13 @@ export const EditTrip = ({ payload }: EditTripProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline">
-          {!!id ? "Modifier" : "Créer une course"}
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size={"sm"}>
+            {!!id ? "Modifier" : "Créer une course"}
+          </Button>
+        )}
       </SheetTrigger>
-            <SheetContent className="px-3 h-[100vh] overflow-y-auto pb-8">
+      <SheetContent className="px-3 h-[100vh] overflow-y-auto pb-8 min-w-[60vw]">
         <SheetHeader>
           <SheetTitle>
             {!!id ? "Modifier une course" : "Créer une course"}
@@ -139,7 +147,7 @@ export const EditTrip = ({ payload }: EditTripProps) => {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
-            className="space-y-4"
+            className="space-y-4 space-x-4 grid grid-cols-1 md:grid-cols-2"
           >
             <FormField
               name="tripType"
@@ -196,6 +204,32 @@ export const EditTrip = ({ payload }: EditTripProps) => {
               )}
             />
             <FormField
+              control={form.control}
+              name="cubicMeters"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nbre de metres cubes</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="totalAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prix du service(FCFA)</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
               name="driverId"
               control={form.control}
               render={({ field }) => (
@@ -222,34 +256,36 @@ export const EditTrip = ({ payload }: EditTripProps) => {
                 </FormItem>
               )}
             />
-            <FormField
-              name="clientId"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selectionner un chauffeur" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clientsQuery.data?.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <EditClient />
+            <div className="flex items-center gap-3">
+              <FormField
+                name="clientId"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Client</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full flex-auto">
+                          <SelectValue placeholder="Selectionner un client" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clientsQuery.data?.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <EditClient />
+            </div>
             <FormField
               name="vehicleId"
               control={form.control}
@@ -278,13 +314,35 @@ export const EditTrip = ({ payload }: EditTripProps) => {
               )}
             />
             <FormField
+              name="lvNumber"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lettre de voiture(LV)</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <Input {...field} type="text" placeholder="LV..." />
+                    </FormControl>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
               control={form.control}
               name="startTime"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Date de depart</FormLabel>
                   <FormControl>
-                    <Input type="datetime-local" {...field} />
+                    <Input
+                      type="datetime-local"
+                      value={field.value?.toString()}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -297,7 +355,11 @@ export const EditTrip = ({ payload }: EditTripProps) => {
                 <FormItem>
                   <FormLabel>Date de depart</FormLabel>
                   <FormControl>
-                    <Input type="datetime-local" {...field} />
+                    <Input
+                      type="datetime-local"
+                      value={field.value?.toString()}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

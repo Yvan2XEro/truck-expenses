@@ -1,14 +1,15 @@
 import apiClient from "@/api/request";
 import { EditUser } from "@/components/moleculs/EditUser";
+import { IsAdmin } from "@/components/moleculs/casl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { User } from "@/types";
 import { PaginatedResponse } from "@/types/api";
@@ -34,8 +35,10 @@ export function UsersPage() {
   return (
     <div>
       <div className="flex justify-between items-center">
-        <h1 className="font-bold text-2xl">Liste du personnel</h1>\
-        <EditUser />
+        <h1 className="font-bold text-2xl">Liste du personnel</h1>
+        <IsAdmin>
+          <EditUser />
+        </IsAdmin>
       </div>
       <Table>
         <TableHeader>
@@ -43,7 +46,9 @@ export function UsersPage() {
           <TableHead>Matricul</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Role</TableHead>
-          <TableHead>Modifier</TableHead>
+          <IsAdmin>
+            <TableHead>Modifier</TableHead>
+          </IsAdmin>
         </TableHeader>
         <TableBody>
           {usersQuery.data?.data.map((user) => (
@@ -54,9 +59,11 @@ export function UsersPage() {
               <TableCell>
                 <Badge>{user.role}</Badge>
               </TableCell>
-              <TableCell>
-                <EditUser payload={user} />
-              </TableCell>
+              <IsAdmin>
+                <TableCell>
+                  <EditUser payload={user} />
+                </TableCell>
+              </IsAdmin>
             </TableRow>
           ))}
         </TableBody>

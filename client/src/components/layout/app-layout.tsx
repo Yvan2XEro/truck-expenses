@@ -6,22 +6,24 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider
+  SidebarProvider,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/store";
 import {
-  BarChart3Icon,
   CarIcon,
   ClipboardListIcon,
   CreditCardIcon,
-  FileTextIcon,
   HomeIcon,
+  ListOrdered,
   LogOutIcon,
-  SettingsIcon,
   UserIcon,
-  Users,
+  Users
 } from "lucide-react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
+import { IsAdmin } from "../moleculs/casl";
+import { LogsPopover } from "../moleculs/LogsPopover";
+import { TooltipProvider } from "../ui/tooltip";
 
 export function AppLayout() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -90,6 +92,18 @@ export function AppLayout() {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
+                isActive={location.pathname.startsWith("/drivers-trips")}
+                tooltip="Chauffeurs & Admin"
+                asChild
+              >
+                <Link to="/drivers-trips">
+                  <ListOrdered />
+                  <span>Classement des chauffeurs</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
                 isActive={location.pathname.startsWith("/trips")}
                 tooltip="Courses"
                 asChild
@@ -125,21 +139,7 @@ export function AppLayout() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                isActive={location.pathname.startsWith("/transactions")}
-                tooltip="Transactions"
-                asChild
-              >
-                <Link to="/transactions">
-                  <BarChart3Icon />
-                  <span>Transactions</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem>
+            {/* <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location.pathname.startsWith("/invoices")}
                 tooltip="Factures"
@@ -150,9 +150,9 @@ export function AppLayout() {
                   <span>Factures</span>
                 </Link>
               </SidebarMenuButton>
-            </SidebarMenuItem>
+            </SidebarMenuItem> */}
 
-            <SidebarMenuItem>
+            {/* <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={location.pathname.startsWith("/settings")}
                 tooltip="Paramètres"
@@ -163,7 +163,7 @@ export function AppLayout() {
                   <span>Paramètres</span>
                 </Link>
               </SidebarMenuButton>
-            </SidebarMenuItem>
+            </SidebarMenuItem> */}
           </SidebarMenu>
         </SidebarContent>
 
@@ -175,7 +175,7 @@ export function AppLayout() {
             <div className="flex flex-col">
               <span className="text-sm font-medium">{user?.name}</span>
               <span className="text-xs text-muted-foreground">
-                {user?.role === "admin" ? "Administrateur" : "Chauffeur"}
+                {user?.role === "ADMIN" ? "Administrateur" : "Chauffeur"}
               </span>
             </div>
             <button
@@ -187,11 +187,21 @@ export function AppLayout() {
           </div>
         </SidebarFooter>
       </Sidebar>
-      <div className="w-full h-screen bg-background ">
-        <main className="flex-1 overflow-auto p-6 min-w-full">
-          <Outlet />
-        </main>
-      </div>
+      <TooltipProvider>
+        <div className="w-full h-screen bg-background ">
+          <header className="sticky top-0 bg-background flex items-center justify-between px-6 py-4 border-b">
+            <div className="flex items-center gap-2 justify-between w-full">
+              <SidebarTrigger />
+              <IsAdmin>
+                <LogsPopover />
+              </IsAdmin>
+            </div>
+          </header>
+          <main className="flex-1 overflow-auto p-6 min-w-full">
+            <Outlet />
+          </main>
+        </div>
+      </TooltipProvider>
     </SidebarProvider>
   );
 }

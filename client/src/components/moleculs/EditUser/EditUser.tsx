@@ -35,7 +35,7 @@ const createUserSchema = z.object({
   name: z.string().min(3),
   email: z.string().email(),
   matricule: z.string().min(3),
-  role: z.enum(["ADMIN", "DRIVER"]).default("DRIVER"),
+  role: z.enum(["ADMIN", "USER", "DRIVER"]).default("DRIVER"),
   password: z.string().min(8),
 });
 
@@ -53,7 +53,7 @@ export const EditUser = ({ payload }: EditUserProps) => {
       name: payload?.name,
       email: payload?.email,
       matricule: payload?.matricule,
-      role: payload?.role || "DRIVER",
+      role: payload?.role || "USER",
     },
   });
 
@@ -117,8 +117,9 @@ export const EditUser = ({ payload }: EditUserProps) => {
                       <SelectValue  placeholder="Role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="DRIVER">Chauffeur</SelectItem>
                       <SelectItem value="ADMIN">Administrateur</SelectItem>
+                      <SelectItem value="USER">Utilisateur</SelectItem>
+                      <SelectItem value="DRIVER">Chauffeur</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

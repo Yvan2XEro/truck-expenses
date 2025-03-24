@@ -16,6 +16,7 @@ const allTypes: Document["documentType"][] = [
   "INSURANCE",
   "LICENSE",
   "TECHNICAL_VISIT",
+  "GRAY_CARD",
 ];
 interface IProps {
   vehicle: Vehicle;

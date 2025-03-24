@@ -1,33 +1,29 @@
 import apiClient from "@/api/request";
+import { IsAdmin } from "@/components/moleculs/casl";
+import { DocumentsAlert } from "@/components/moleculs/DocumentsAlert";
 import { EditVehicle } from "@/components/moleculs/EditVehicle";
 import { VehicleDocuments } from "@/components/moleculs/VehicleDocuments";
 import { VehicleSkeleton } from "@/components/moleculs/VehicleSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useDocumentStore } from "@/store";
-import { Vehicle, VehicleStatus } from "@/types";
+import { ID, Vehicle } from "@/types";
 import { PaginatedResponse } from "@/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangleIcon,
   ArrowLeft,
   ArrowRight,
   CarIcon,
   PlusIcon,
+  TrashIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const typeToFreeText = {
   LOG_TRUCK: "Camion à grumes",
   FLATBED: "Camion plat",
 };
 export function VehiclesPage() {
-  const {
-    fetchDocuments,
-    getExpiringDocuments,
-    getExpiredDocuments,
-  } = useDocumentStore();
-
   const [page, setPage] = useState(1);
 
   const fetchPage = (page: number) => {
@@ -40,32 +36,35 @@ export function VehiclesPage() {
     queryFn: () => fetchPage(page),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: ID) => {
+      return apiClient.delete(`/vehicles/${id}`);
+    },
+    onSuccess: () => {
+      vehiclesQuery.refetch();
+    },
+  });
+
   const totalPages = Math.ceil((vehiclesQuery.data?.meta.total ?? 0) / 10);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
-
-  const getStatusColor = (status: VehicleStatus) => {
-    switch (status) {
-      case "AVAILABLE":
-        return "bg-green-100 text-green-800";
-      case "ON_TRIP":
-        return "bg-blue-100 text-blue-800";
-      case "MAINTENANCE":
-        return "bg-yellow-100 text-yellow-800";
-      case "OUT_OF_SERVICE":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const hasExpiringDocuments = (vehicle: Vehicle, days: number) => {
+    const now = new Date();
+    const future = new Date();
+    future.setDate(now.getDate() + days);
+    return (
+      (
+        vehicle.documents?.filter(
+          (doc) =>
+            new Date(doc.expiryDate) >= now &&
+            new Date(doc.expiryDate) <= future
+        ) || []
+      ).length > 0
+    );
   };
 
-  const hasDocumentIssues = (vehicle: Vehicle) => {
+  const hasExpiredDocuments = (vehicle: Vehicle) => {
     return vehicle.documents.some(
-      (doc) =>
-        doc.status === "INVALID" ||
-        (doc.expiryDate && new Date(doc.expiryDate) < new Date())
+      (doc) => doc.expiryDate && new Date(doc.expiryDate) < new Date()
     );
   };
 
@@ -78,7 +77,9 @@ export function VehiclesPage() {
             Gérez votre flotte de véhicules
           </p>
         </div>
-        <EditVehicle />
+        <IsAdmin>
+          <EditVehicle />
+        </IsAdmin>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -96,29 +97,31 @@ export function VehiclesPage() {
             )}
             {vehiclesQuery.data?.data?.map((vehicle) => (
               <div key={vehicle.id} className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col md:flex-row items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                       <CarIcon className="h-5 w-5 text-primary" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{vehicle.licensePlate}</h3>
-                        {hasDocumentIssues(vehicle) && (
-                          <AlertTriangleIcon className="h-4 w-4 text-yellow-500" />
+                        <h3 className="font-medium">
+                          {vehicle.tractorPlateNumber}
+                        </h3>
+                        {hasExpiringDocuments(vehicle, 30) && (
+                          <div title="Documents expirant bientôt">
+                            <AlertTriangleIcon className="h-4 w-4 text-yellow-500" />
+                          </div>
+                        )}
+                        {hasExpiredDocuments(vehicle) && (
+                          <div title="Documents expirés">
+                            <AlertTriangleIcon className="h-4 w-4 text-red-500" />
+                          </div>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {vehicle.model} | {vehicle.brand}
                       </p>
                       <div className="mt-1 flex items-center gap-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusColor(
-                            vehicle.status
-                          )}`}
-                        >
-                          {vehicle.status}
-                        </span>
                         <Badge
                           variant={
                             vehicle.type === "FLATBED" ? "outline" : "default"
@@ -134,7 +137,23 @@ export function VehiclesPage() {
                   </div>
                   <div className="flex gap-2">
                     <VehicleDocuments vehicle={vehicle} />
-                    <EditVehicle payload={vehicle} />
+                    <IsAdmin>
+                      <EditVehicle payload={vehicle} />
+                      <Button
+                        size={"icon"}
+                        variant="destructive"
+                        onClick={() => {
+                          if (
+                            confirm(
+                              "Voulez-vous vraiment supprimer ce véhicule ?"
+                            )
+                          )
+                            deleteMutation.mutate(vehicle.id);
+                        }}
+                      >
+                        <TrashIcon />
+                      </Button>
+                    </IsAdmin>
                   </div>
                 </div>
               </div>
@@ -179,73 +198,7 @@ export function VehiclesPage() {
             </Button>
           </div>
         </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <div className="mb-4 flex items-center">
-            <AlertTriangleIcon className="mr-2 h-5 w-5 text-yellow-500" />
-            <h2 className="text-lg font-semibold">Document Alerts</h2>
-          </div>
-
-          <div className="space-y-3">
-            {getExpiredDocuments().length > 0 && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                <p className="font-medium">
-                  {getExpiredDocuments().length} document(s) expired
-                </p>
-                <ul className="mt-1 list-inside list-disc">
-                  {getExpiredDocuments()
-                    .slice(0, 3)
-                    .map((doc) => (
-                      <li key={doc.id}>
-                        {doc.documentType?.replace("_", " ")} for vehicle{" "}
-                        {
-                          vehiclesQuery.data?.data.find(
-                            (v) => v.id === doc.vehicleId
-                          )?.licensePlate
-                        }
-                      </li>
-                    ))}
-                  {getExpiredDocuments().length > 3 && (
-                    <li>And {getExpiredDocuments().length - 3} more...</li>
-                  )}
-                </ul>
-              </div>
-            )}
-
-            {getExpiringDocuments(30).length > 0 && (
-              <div className="rounded-md bg-yellow-500/10 p-3 text-sm text-yellow-700">
-                <p className="font-medium">
-                  {getExpiringDocuments(30).length} document(s) expiring soon
-                </p>
-                <ul className="mt-1 list-inside list-disc">
-                  {getExpiringDocuments(30)
-                    .slice(0, 3)
-                    .map((doc) => (
-                      <li key={doc.id}>
-                        {doc.documentType?.replace("_", " ")} for vehicle{" "}
-                        {
-                          vehiclesQuery.data?.data.find(
-                            (v) => v.id === doc.vehicleId
-                          )?.licensePlate
-                        }{" "}
-                        expires on{" "}
-                        {new Date(doc.expiryDate).toLocaleDateString()}
-                      </li>
-                    ))}
-                  {getExpiringDocuments(30).length > 3 && (
-                    <li>And {getExpiringDocuments(30).length - 3} more...</li>
-                  )}
-                </ul>
-              </div>
-            )}
-
-            {getExpiredDocuments().length === 0 &&
-              getExpiringDocuments(30).length === 0 && (
-                <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-                  <p>No document alerts at the moment.</p>
-                </div>
-              )}
-          </div>
-        </div>
+        <DocumentsAlert />
       </div>
     </div>
   );

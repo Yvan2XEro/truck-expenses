@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Client } from "@/types";
+import { Weighbridge } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -18,45 +18,42 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-const createClientSchema = z.object({
+const createWeighbridgeSchema = z.object({
   name: z.string().min(3),
-  contact: z.string().optional(),
-  address: z.string().optional(),
 });
 
-const updateClientSchema = createClientSchema.partial();
+const updateWeighbridgeSchema = createWeighbridgeSchema.partial();
 
-interface EditClientProps {
-  payload?: Partial<Client>;
+interface EditWeighbridgeProps {
+  payload?: Partial<Weighbridge>;
 }
-export const EditClient = ({ payload }: EditClientProps) => {
+export const EditWeighbridge = ({ payload }: EditWeighbridgeProps) => {
   const id = payload?.id;
 
-  const form = useForm<z.infer<typeof updateClientSchema>>({
-    resolver: zodResolver(!!id ? updateClientSchema : createClientSchema),
+  const form = useForm<z.infer<typeof updateWeighbridgeSchema>>({
+    resolver: zodResolver(
+      !!id ? updateWeighbridgeSchema : createWeighbridgeSchema
+    ),
     defaultValues: {
       name: payload?.name,
-      contact: payload?.contact,
-      address: payload?.address,
     },
   });
 
-  console.log(form.formState.errors);
   const [open, setOpen] = useState(false);
 
   const client = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (data: z.infer<typeof updateClientSchema>) => {
+    mutationFn: (data: z.infer<typeof updateWeighbridgeSchema>) => {
       if (!!id) {
-        return apiClient.patch(`/clients/${id}`, data);
+        return apiClient.patch(`/weighbridges/${id}`, data);
       }
-      return apiClient.post(`/clients`, data);
+      return apiClient.post(`/weighbridges`, data);
     },
     onSuccess: () => {
       toast.success("Operation reussie");
       form.reset();
       client.invalidateQueries({
-        queryKey: ["clients"],
+        queryKey: ["weighbridges"],
       });
       setOpen(false);
     },
@@ -72,16 +69,16 @@ export const EditClient = ({ payload }: EditClientProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" type="button">
-          {!!id ? "Modifier" : "Créer un client"}
+        <Button variant="outline" type="button" size={"sm"}>
+          {!!id ? "Modifier" : "Créer"}
         </Button>
       </SheetTrigger>
       <SheetContent className="px-3 h-[100vh] overflow-y-auto pb-8">
         <Form {...form}>
           <form
-            onSubmit={(e)=>{
-              e.stopPropagation()
-              form.handleSubmit((data) => mutation.mutate(data))(e)
+            onSubmit={(e) => {
+              e.stopPropagation();
+              return form.handleSubmit((data) => mutation.mutate(data))(e);
             }}
             className="space-y-8"
           >
@@ -97,31 +94,6 @@ export const EditClient = ({ payload }: EditClientProps) => {
                 </FormItem>
               )}
             />
-            <FormField
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Adresse</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="contact"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "En cours..." : "Enregistrer"}
             </Button>

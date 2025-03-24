@@ -5,6 +5,8 @@ import { AppLayout } from './components/layout/app-layout';
 import { Toaster } from './components/ui/sonner';
 import { ClientsPage } from './pages/clients';
 import { DashboardPage } from './pages/dashboard';
+import { DriversTripsPage } from './pages/drivers-trips';
+import { ExpensesPage } from './pages/expenses';
 import { LoginPage } from './pages/login';
 import { TripsPage } from './pages/trips';
 import { UsersPage } from './pages/users';
@@ -26,8 +28,9 @@ function App() {
             <Route path="/vehicles" element={<VehiclesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/clients" element={<ClientsPage />} />
+            <Route path='/drivers-trips' element={<DriversTripsPage />} />
             <Route path="/trips" element={<TripsPage />} />
-            <Route path="/expenses" element={<div>Expenses Page</div>} />
+            <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/transactions" element={<div>Transactions Page</div>} />
             <Route path="/invoices" element={<div>Invoices Page</div>} />
             <Route path="/settings" element={<div>Settings Page</div>} />

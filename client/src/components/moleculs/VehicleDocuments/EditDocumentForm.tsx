@@ -2,34 +2,30 @@ import apiClient from "@/api/request";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import {
-    Form,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import { useAuthStore } from "@/store";
 import { Document } from "@/types";
+import { docsTypesFrechText } from "@/utils/vehicles";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-
-const typesFrechText: Record<Document["documentType"], string> = {
-  ACF: "ACF",
-  BLUE_CARD: "Carte bleue",
-  INSURANCE: "Assurance",
-  LICENSE: "Permis",
-  TECHNICAL_VISIT: "Visite technique",
-};
+import { IsAdmin } from "../casl";
 
 const docSchema = z.object({
   //   issueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
@@ -45,6 +41,7 @@ const docSchema = z.object({
     "INSURANCE",
     "LICENSE",
     "TECHNICAL_VISIT",
+    "GRAY_CARD",
   ]),
   status: z.enum(["VALID", "INVALID"]).default("VALID"),
 });
@@ -65,7 +62,19 @@ export const EditDocumentForm = ({ data }: IProps) => {
     },
     resolver: zodResolver(docSchema),
   });
-  console.log(form.formState.errors);
+  const expiryDate = form.watch("expiryDate");
+  useEffect(() => {
+    if (expiryDate) {
+      const expiryDateObj = new Date(expiryDate);
+      const currentDate = new Date();
+      if (expiryDateObj < currentDate) {
+        form.setError("expiryDate", {
+          type: "manual",
+          message: "La date d'expiration est dépassée. Veuillez la modifier.",
+        });
+      }
+    }
+  }, [expiryDate, form]);
   const client = useQueryClient();
   const mutation = useMutation({
     mutationFn: async (payload: z.infer<typeof docSchema>) => {
@@ -76,6 +85,7 @@ export const EditDocumentForm = ({ data }: IProps) => {
     },
     onSuccess: () => {
       client.refetchQueries({ queryKey: ["vehicles"] });
+      client.refetchQueries({ queryKey: ["documents"] });
       toast.success(data.id ? "Document modifié" : "Document créé");
     },
   });
@@ -86,17 +96,27 @@ export const EditDocumentForm = ({ data }: IProps) => {
     },
     onSuccess: () => {
       client.refetchQueries({ queryKey: ["vehicles"] });
+      client.refetchQueries({ queryKey: ["documents"] });
       toast.success("Document supprimé");
     },
   });
+  const { isAdmin } = useAuthStore();
   return (
     <Card className="p-3">
       <CardTitle className="uppercase">
-        {typesFrechText[data.documentType]}
+        {docsTypesFrechText[data.documentType]}
       </CardTitle>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+          onSubmit={
+            isAdmin()
+              ? form.handleSubmit((data) => mutation.mutate(data))
+              : form.handleSubmit(() => {
+                  toast.error(
+                    "Vous n'avez pas les droits pour modifier ce document"
+                  );
+                })
+          }
           className="space-y-4"
         >
           {/* <FormField
@@ -144,19 +164,21 @@ export const EditDocumentForm = ({ data }: IProps) => {
             )}
           />
           <div className="flex items-center gap-3">
-            {data.id && (
-              <Button
-                disabled={deleteMutation.isPending}
-                variant="destructive"
-                type="button"
-                onClick={() => deleteMutation.mutate()}
-              >
-                {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+            <IsAdmin>
+              {data.id && (
+                <Button
+                  disabled={deleteMutation.isPending}
+                  variant="destructive"
+                  type="button"
+                  onClick={() => deleteMutation.mutate()}
+                >
+                  {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+                </Button>
+              )}
+              <Button disabled={mutation.isPending} type="submit">
+                {mutation.isPending ? "En cours..." : "Enregistrer"}
               </Button>
-            )}
-            <Button disabled={mutation.isPending} type="submit">
-              {mutation.isPending ? "En cours..." : "Enregistrer"}
-            </Button>
+            </IsAdmin>
           </div>
         </form>
       </Form>

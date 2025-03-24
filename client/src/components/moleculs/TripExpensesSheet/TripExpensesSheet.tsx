@@ -13,11 +13,13 @@ import { PaginatedResponse } from "@/types/api";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { EditExpenseForm } from "./EditExpenseForm";
+import { Invoice } from "./Invoice";
 
 interface IProps {
   trip: Trip;
+  trigger?: React.ReactNode;
 }
-export const TripExpensesSheet = ({ trip }: IProps) => {
+export const TripExpensesSheet = ({ trip, trigger }: IProps) => {
   const [open, setOpen] = useState(false);
   const expensesQuery = useQuery({
     queryKey: ["expenses", trip.id],
@@ -30,18 +32,31 @@ export const TripExpensesSheet = ({ trip }: IProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button>Depenses</Button>
+        {trigger??<Button size={"sm"}>Details</Button>}
       </SheetTrigger>
-      <SheetContent className="min-w-[70vw]">
+      <SheetContent className="min-w-[95vw]">
         <SheetHeader>
-          <SheetTitle>Depenses({expensesQuery.data?.length})</SheetTitle>
-          <small>
-            Total: {expensesQuery.data?.reduce((acc, expense) => {
-              return acc + Number(expense.amount);
-            }, 0).toLocaleString("fr-FR")} FCFA
-          </small>
+          <SheetTitle>
+            Details ({trip.departure} - {trip.arrival})
+          </SheetTitle>
+          <div className="flex flex-col gap-1">
+            <small>LV: {trip.lvNumber}</small>
+            <small>Chauffeur: {trip.driver?.name}</small>
+            <small>Client: {trip.client?.name}</small>
+            <small>
+              Total:{" "}
+              <strong>
+                {expensesQuery.data
+                  ?.reduce((acc, expense) => {
+                    return acc + Number(expense.amount);
+                  }, 0)
+                  .toLocaleString("fr-FR")}{" "}
+                FCFA
+              </strong>
+            </small>
+          </div>
         </SheetHeader>
-        <div className="px-3 gap-2 grid grid-cols-1 md:grid-cols-3">
+        <div className="px-3 gap-2 grid grid-cols-1 md:grid-cols-4">
           <div className="bg-foreground/30 p-3 col-span-2 h-[85vh] grid grid-cols-1 md:grid-cols-2 gap-3 py-3 overflow-y-auto">
             {expensesQuery.isLoading && <p>Chargement...</p>}
             {expensesQuery.data?.map((expense) => (
@@ -57,6 +72,7 @@ export const TripExpensesSheet = ({ trip }: IProps) => {
             <h4 className="font-bold">Nouvelle depense</h4>
             <EditExpenseForm payload={{ tripId: trip.id }} />
           </Card>
+          <Invoice trip={trip} />
         </div>
       </SheetContent>
     </Sheet>
