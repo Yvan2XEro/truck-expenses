@@ -116,7 +116,6 @@ export const EditTrip = ({ payload, trigger }: EditTripProps) => {
       form.reset();
       client.invalidateQueries({
         queryKey: ["trips"],
-        enabled: open,
       });
       setOpen(false);
     },
