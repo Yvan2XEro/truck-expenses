@@ -24,7 +24,7 @@ const invoiceSchema = z.object({
   clientId: z.string(),
   totalAmount: z.number(),
   invoiceDate: z.coerce.date(),
-  tva: z.number().optional(),
+  tva: z.coerce.number().default(19.25).optional(),
   tripId: z.string(),
 });
 
@@ -37,7 +37,7 @@ export const TripInvoice = ({ trip, trigger }: TripInvoiceProps) => {
   const client = trip.client;
   const hasInvoice = !!trip.invoice;
   const queryClient = useQueryClient();
-  const [tvaRate, setTvaRate] = useState(18); // Default TVA rate is 18%
+  const [tvaRate, setTvaRate] = useState(19.25); // Default TVA rate is 19.25%
 
   const servicePrice = Number(trip.totalAmount || 0) || 0;
   const weighbridgeExpenses = trip.expenses
