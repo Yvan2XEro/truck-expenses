@@ -13,7 +13,6 @@ import { PaginatedResponse } from "@/types/api";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { EditExpenseForm } from "./EditExpenseForm";
-import { Invoice } from "./Invoice";
 
 interface IProps {
   trip: Trip;
@@ -57,7 +56,7 @@ export const TripExpensesSheet = ({ trip, trigger }: IProps) => {
           </div>
         </SheetHeader>
         <div className="px-3 gap-2 grid grid-cols-1 md:grid-cols-4">
-          <div className="bg-foreground/30 p-3 col-span-2 h-[85vh] grid grid-cols-1 md:grid-cols-2 gap-3 py-3 overflow-y-auto">
+          <div className="bg-foreground/30 p-3 col-span-3 h-[85vh] pb-12 grid grid-cols-1 md:grid-cols-3 gap-3 py-3 overflow-y-auto">
             {expensesQuery.isLoading && <p>Chargement...</p>}
             {expensesQuery.data?.map((expense) => (
               <Card className="p-3 space-y-3" key={expense.id}>
@@ -72,7 +71,6 @@ export const TripExpensesSheet = ({ trip, trigger }: IProps) => {
             <h4 className="font-bold">Nouvelle depense</h4>
             <EditExpenseForm payload={{ tripId: trip.id }} />
           </Card>
-          <Invoice trip={trip} />
         </div>
       </SheetContent>
     </Sheet>
