@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -335,7 +336,7 @@ export const EditTrip = ({ payload, trigger }: EditTripProps) => {
               name="startTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date de depart</FormLabel>
+                  <FormLabel>Date de départ</FormLabel>
                   <FormControl>
                     <Input
                       type="datetime-local"
@@ -352,7 +353,7 @@ export const EditTrip = ({ payload, trigger }: EditTripProps) => {
               name="endTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date de depart</FormLabel>
+                  <FormLabel>Date d'arrivee</FormLabel>
                   <FormControl>
                     <Input
                       type="datetime-local"
@@ -360,6 +361,9 @@ export const EditTrip = ({ payload, trigger }: EditTripProps) => {
                       onChange={field.onChange}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Le remplir lors de l'arrivée
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
