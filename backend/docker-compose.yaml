@@ -1,4 +1,3 @@
-
 services:
   backend:
     container_name: te_backend
@@ -9,3 +8,14 @@ services:
     ports:
       - "9000:3000"
     restart: unless-stopped
+  #
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: te_db
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #     POSTGRES_DB: ${POSTGRES_DB}
+  #   ports:
+  #     - "${POSTGRES_PORT:-54321}:5432"
+  #   restart: unless-stopped

@@ -14,8 +14,12 @@ documents.get("/", zValidator("query", queryPaginationSchema), async (c) => {
 
   const [documents, count] = await prisma.$transaction([
     prisma.document.findMany({
-            ...paginationObject({ limit, page }),
-      
+      ...paginationObject({ limit, page }),
+      where: {
+        vehicle: {
+          deletedAt: null,
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.document.count(),
@@ -40,7 +44,7 @@ documents.post(
       documentType: z.nativeEnum(DocumentType),
       expiryDate: z.coerce.date(),
       status: z.nativeEnum(DocumentStatus).optional(),
-    })
+    }),
   ),
   async (c) => {
     const prisma = getPrisma(Bun.env.DATABASE_URL!);
@@ -56,7 +60,7 @@ documents.post(
     });
 
     return c.json(newDocument, 201);
-  }
+  },
 );
 
 documents.patch(
@@ -68,7 +72,7 @@ documents.patch(
       documentType: z.nativeEnum(DocumentType).optional(),
       expiryDate: z.coerce.date().optional(),
       status: z.nativeEnum(DocumentStatus).optional(),
-    })
+    }),
   ),
   async (c) => {
     const prisma = getPrisma(Bun.env.DATABASE_URL!);
@@ -88,7 +92,7 @@ documents.patch(
       },
     });
     return c.json(updatedDocument);
-  }
+  },
 );
 
 documents.delete("/:id", async (c) => {
